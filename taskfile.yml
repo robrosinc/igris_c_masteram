@@ -1,0 +1,11 @@
+version: "3"
+
+tasks:
+  activate:
+    cmds:
+    - pixi shell --frozen
+    silent: true
+  fmt:
+    cmds:
+    - pixi run --frozen clang-format -i igris_c_masterarm.cpp
+    - pixi run --frozen cmake-format -i ./CMakeLists.txt
