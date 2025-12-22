@@ -7,5 +7,5 @@ tasks:
     silent: true
   fmt:
     cmds:
-    - pixi run --frozen clang-format -i igris_c_masterarm.cpp
+    - pixi run --frozen clang-format -i igris_c_masterarm_node.cpp
     - pixi run --frozen cmake-format -i ./CMakeLists.txt

@@ -55,12 +55,6 @@ set_target_properties(
              INTERFACE_LINK_LIBRARIES ${DYNAMIXEL_SDK_LIBRARY}
 )
 
-add_executable(igris_c_masterarm igris_c_masterarm.cpp)
-target_link_libraries(
-  igris_c_masterarm
-  PUBLIC MasterArmSDK igris_sdk::igris_sdk
-)
-
 add_executable(igris_c_masterarm_node igris_c_masterarm_node.cpp)
 target_link_libraries(
   igris_c_masterarm_node MasterArmSDK igris_sdk::igris_sdk pthread rt

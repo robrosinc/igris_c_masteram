@@ -1,27 +1,32 @@
+/**
+ * @file igris_c_masterarm_node.cpp
+ * @author colson (colson@robros.co.kr)
+ * @brief
+ * @version 0.1
+ * @date 2025-12-22
+ *
+ * @copyright Copyright (c) 2025
+ *
+ */
 
-#include <atomic>
-#include <chrono>
-#include <cmath>
-#include <csignal>
-#include <deque>
-#include <future>
-#include <igris_sdk/channel_factory.hpp>
-#include <igris_sdk/igris_c_client.hpp>
-#include <igris_sdk/publisher.hpp>
-#include <igris_sdk/subscriber.hpp>
+// std
 #include <iostream>
-#include <mutex>
 #include <thread>
-#include <rclcpp/rclcpp.hpp>
+#include <vector>
+
+// ROS
+#include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 
-// ImGui includes
+// igris_sdk
+#include "igris_sdk/channel_factory.hpp"
+#include "igris_sdk/igris_c_client.hpp"
+#include "igris_sdk/publisher.hpp"
+#include "igris_sdk/subscriber.hpp"
 
+// masterarm
 #include "rbrs_masterarm.hpp"
-
-#include <iostream>
-#include <vector>
 
 using namespace igris_sdk;
 using namespace igris_c::msg::dds;
@@ -62,12 +67,14 @@ static const std::vector<float> axisDir = {
 };
 
 static const std::vector<std::vector<float>> motorLimit = {
-    {0, 0}, {0, 0}, {0, 0},
-    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-    {-3.1415, 1.0467}, {-0.1744, 3.1415}, {-1.5708, 1.5708}, {-2.093, 0}, {-1.5708, 1.5700}, {-0.7571, 0.9821}, {-0.9821, 0.7571},
-    {-3.1415, 1.0467}, {-3.1415, 0.1744}, {-1.5708, 1.5708}, {-2.093, 0}, {-1.5708, 1.5708}, {-0.9821, 0.7571}, {-0.7571, 0.9821},
-    {0, 0}, {0, 0},
+    // clang-format off
+    {0, 0}, {0, 0}, {0, 0}, // Waist
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, // Left leg
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, // Right leg
+    {-3.1415, 1.0467}, {-0.1744, 3.1415}, {-1.5708, 1.5708}, {-2.093, 0}, {-1.5708, 1.5700}, {-0.7571, 0.9821}, {-0.9821, 0.7571}, // Left arm
+    {-3.1415, 1.0467}, {-3.1415, 0.1744}, {-1.5708, 1.5708}, {-2.093, 0}, {-1.5708, 1.5708}, {-0.9821, 0.7571}, {-0.7571, 0.9821}, // Right arm
+    {0, 0}, {0, 0}, // Neck
+    // clang-format on
 };
 
 void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr *targetPub) {
@@ -90,7 +97,6 @@ void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msg
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-        
         std_msgs::msg::Float32MultiArray targetHandMsg;
         targetHandMsg.data.resize(12);
         for (int i = 0; i < 5; i++) {
@@ -103,9 +109,9 @@ void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msg
 
         for (int i = 0; i < 5; i++) {
             if (left_target_joint_positions[8] < -0.7805)
-                targetHandMsg.data[i+6] = 1.0f;
+                targetHandMsg.data[i + 6] = 1.0f;
             else
-                targetHandMsg.data[i+6] = 0.0f;
+                targetHandMsg.data[i + 6] = 0.0f;
         }
         targetHandMsg.data[11] = left_target_joint_positions[7] > 0.7805 ? 1.0f : 0.0f;  // Right thumb
 
@@ -175,7 +181,6 @@ void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msg
         right_wrist_back_cmd.kd(softKpKd[28][1]);
 
         publisher->write(cmd);
-
     }
 }
 
@@ -188,6 +193,7 @@ void controlModeStateCallback(const ControlModeState &state) {
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("igris_c_masterarm_node");
+
     int domain_id = 0;
     if (argc > 1) {
         domain_id = std::atoi(argv[1]);
@@ -226,8 +232,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Initialize rt/controlmodestate subscriber..." << std::endl;
     Subscriber<ControlModeState> controlmodestateSub("rt/controlmodestate");
-    if (!controlmodestateSub.init(controlModeStateCallback))
-    {
+    if (!controlmodestateSub.init(controlModeStateCallback)) {
         std::cerr << "Failed to initialize ControlModeState subscriber" << std::endl;
         return 1;
     }
@@ -258,17 +263,15 @@ int main(int argc, char *argv[]) {
         rclcpp::spin_some(node);
         sdk.read();
 
-        nowPositions    = sdk.get_positions();
-        ids             = sdk.get_all_ids();
+        nowPositions = sdk.get_positions();
+        ids          = sdk.get_all_ids();
 
-        for (int i = 0; i < ids.size(); i++)
-        {
+        for (int i = 0; i < ids.size(); i++) {
             uint8_t id = ids[i];
             if (id >= 10 && id <= 19)  // Right arm
             {
                 rigit_target_joint_positions[i] = nowPositions[i];
-            }
-            else if (id >= 20 && id <= 29)  // Left arm
+            } else if (id >= 20 && id <= 29)  // Left arm
             {
                 left_target_joint_positions[i - 9] = nowPositions[i];
             }
@@ -276,12 +279,12 @@ int main(int argc, char *argv[]) {
 
         std::cout << "------" << std::endl;
         for (int i = 0; i < 7; i++) {
-            std::cout << "R Joint " << i << " Pos: " << rigit_target_joint_positions[i] * axisDir[i+22] << std::endl;
+            std::cout << "R Joint " << i << " Pos: " << rigit_target_joint_positions[i] * axisDir[i + 22] << std::endl;
         }
         std::cout << "R thumb: " << rigit_target_joint_positions[7] << std::endl;
         std::cout << "R grip: " << rigit_target_joint_positions[8] << std::endl;
         for (int i = 0; i < 7; i++) {
-            std::cout << "L Joint " << i << " Pos: " << left_target_joint_positions[i] * axisDir[i+15]<< std::endl;
+            std::cout << "L Joint " << i << " Pos: " << left_target_joint_positions[i] * axisDir[i + 15] << std::endl;
         }
         std::cout << "L thmb: " << left_target_joint_positions[7] << std::endl;
         std::cout << "L grip: " << left_target_joint_positions[8] << std::endl;
