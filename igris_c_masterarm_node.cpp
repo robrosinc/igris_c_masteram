@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
 
     sdk.open();
 
-    sdk.set_toggle_current(10);
+    // sdk.set_toggle_current(10);
 
     sdk.read();
 
