@@ -63,5 +63,6 @@ target_link_libraries(
 ament_target_dependencies(igris_c_masterarm_node rclcpp std_msgs)
 
 install(TARGETS igris_c_masterarm_node DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()

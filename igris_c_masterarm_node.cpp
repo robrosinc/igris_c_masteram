@@ -11,6 +11,7 @@
 
 // std
 #include <iostream>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -194,6 +195,11 @@ int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("igris_c_masterarm_node");
 
+    const auto port = node->declare_parameter<std::string>("port", "/dev/igrisb_masterarm");
+    const auto baud = node->declare_parameter<int>("baud", 1000000);
+
+    std::cout << "Masterarm Port: " << port << ", Baud: " << baud << std::endl;
+
     int domain_id = 0;
     if (argc > 1) {
         domain_id = std::atoi(argv[1]);
@@ -237,7 +243,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    RBRSMasterArm sdk("/dev/ttyUSB0", 1000000, 0);
+    RBRSMasterArm sdk(port, baud, 0);
 
     sdk.open();
 
