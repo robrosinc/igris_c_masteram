@@ -37,6 +37,24 @@ std::vector<float> left_target_joint_positions  = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 std::vector<float> rigit_target_joint_positions = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 ControlMode g_control_mode = ControlMode::CONTROL_MODE_HIGH_LEVEL;
+// Hand motor IDs (matches dxl_hand_controller order)
+static const std::array<uint16_t, 12> HAND_MOTOR_IDS = {11, 12, 13, 14, 15, 16, 21, 22, 23, 24, 25, 26};
+
+// Motor names for display
+static const std::array<const char *, 12> HAND_MOTOR_NAMES = {
+    "R_Thumb",   // ID 11
+    "R_Index",   // ID 12
+    "R_Middle",  // ID 13
+    "R_Ring",    // ID 14
+    "R_Pinky",   // ID 15
+    "R_Spread",  // ID 16
+    "L_Thumb",   // ID 21
+    "L_Index",   // ID 22
+    "L_Middle",  // ID 23
+    "L_Ring",    // ID 24
+    "L_Pinky",   // ID 25
+    "L_Spread"   // ID 26
+};
 
 static const std::vector<std::vector<float>> KpKd = {
     {50.0, 0.8},  {25.0, 0.8},  {25.0, 0.8},                                                         // Waist
@@ -96,7 +114,7 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
     handCmd.motor_cmd().resize(12);
     for (int i = 0; i < 12; i++) {
         auto &motor_cmd = handCmd.motor_cmd()[i];
-        motor_cmd.id(i);
+        motor_cmd.id(HAND_MOTOR_IDS[i]);
         motor_cmd.q(0);
         motor_cmd.dq(0.0f);
         motor_cmd.tau(0.0f);
@@ -108,8 +126,6 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-        HandCmd handCmd;
-        handCmd.motor_cmd().resize(12);
         for (int i = 0; i < 5; i++) {
             if (rigit_target_joint_positions[8] > 0.7805)
                 handCmd.motor_cmd()[i].q(1.0f);
@@ -205,7 +221,7 @@ int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("igris_c_masterarm_node");
 
-    const auto port = node->declare_parameter<std::string>("port", "/dev/igrisb_masterarm");
+    const auto port = node->declare_parameter<std::string>("port", "/dev/ttyUSB0");
     const auto baud = node->declare_parameter<int>("baud", 1000000);
 
     std::cout << "Masterarm Port: " << port << ", Baud: " << baud << std::endl;
