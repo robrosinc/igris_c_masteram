@@ -17,8 +17,6 @@
 
 // ROS
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float32.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
 
 // igris_sdk
 #include "igris_sdk/channel_factory.hpp"
