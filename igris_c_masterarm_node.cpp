@@ -78,8 +78,9 @@ static const std::vector<std::vector<float>> motorLimit = {
     // clang-format on
 };
 
-void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr *targetPub) {
+void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *handPublisher) {
     LowCmd cmd;
+    HandCmd handCmd;
 
     bool use_joint_mode = (g_show_motor == 0);  // 0 = joint, 1 = motor
     cmd.kinematic_mode(use_joint_mode ? KinematicMode::PJS : KinematicMode::MS);
@@ -94,31 +95,42 @@ void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msg
         motor_cmd.kd(0);
     }
 
+    handCmd.motor_cmd().resize(12);
+    for (int i = 0; i < 12; i++) {
+        auto &motor_cmd = handCmd.motor_cmd()[i];
+        motor_cmd.id(i);
+        motor_cmd.q(0);
+        motor_cmd.dq(0.0f);
+        motor_cmd.tau(0.0f);
+        motor_cmd.kp(0);
+        motor_cmd.kd(0);
+    }
+
     while (g_running) {
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-        std_msgs::msg::Float32MultiArray targetHandMsg;
-        targetHandMsg.data.resize(12);
+        HandCmd handCmd;
+        handCmd.motor_cmd().resize(12);
         for (int i = 0; i < 5; i++) {
             if (rigit_target_joint_positions[8] > 0.7805)
-                targetHandMsg.data[i] = 1.0f;
+                handCmd.motor_cmd()[i].q(1.0f);
             else
-                targetHandMsg.data[i] = 0.0f;
+                handCmd.motor_cmd()[i].q(0.0f);
         }
-        targetHandMsg.data[5] = rigit_target_joint_positions[7] < -0.7805 ? 1.0f : 0.0f;  // Left thumb
+        handCmd.motor_cmd()[5].q(rigit_target_joint_positions[7] < -0.7805 ? 1.0f : 0.0f);  // Left thumb
 
         for (int i = 0; i < 5; i++) {
             if (left_target_joint_positions[8] < -0.7805)
-                targetHandMsg.data[i + 6] = 1.0f;
+                handCmd.motor_cmd()[i + 6].q(1.0f);
             else
-                targetHandMsg.data[i + 6] = 0.0f;
+                handCmd.motor_cmd()[i + 6].q(0.0f);
         }
-        targetHandMsg.data[11] = left_target_joint_positions[7] > 0.7805 ? 1.0f : 0.0f;  // Right thumb
+        handCmd.motor_cmd()[11].q(left_target_joint_positions[7] > 0.7805 ? 1.0f : 0.0f);  // Right thumb
+        handPublisher->write(handCmd);
 
-        (*targetPub)->publish(targetHandMsg);
         if (g_control_mode != ControlMode::CONTROL_MODE_LOW_LEVEL) {
-            // std::cout << "Waiting for LOW_LEVEL control mode..." << std::endl;
+            std::cout << "Waiting for LOW_LEVEL control mode..." << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
@@ -181,7 +193,7 @@ void LowCmdPublishThread(Publisher<LowCmd> *publisher, rclcpp::Publisher<std_msg
         right_wrist_back_cmd.kp(softKpKd[28][0]);
         right_wrist_back_cmd.kd(softKpKd[28][1]);
 
-        publisher->write(cmd);
+        jointPublisher->write(cmd);
     }
 }
 
@@ -205,8 +217,6 @@ int main(int argc, char *argv[]) {
         domain_id = std::atoi(argv[1]);
     }
 
-    auto targetPub = node->create_publisher<std_msgs::msg::Float32MultiArray>("igris_c/hand/targets", 10);
-
     std::cout << "Domain ID: " << domain_id << std::endl;
     std::cout << "Make sure the robot controller is running!\n" << std::endl;
 
@@ -224,15 +234,21 @@ int main(int argc, char *argv[]) {
     client.Init();
     client.SetTimeout(5.0f);
 
-    // Create LowCmd publisher
+    // Create publisher
     std::cout << "Initializing LowCmd publisher..." << std::endl;
     Publisher<LowCmd> lowcmd_pub("rt/lowcmd");
+    Publisher<HandCmd> handcmd_pub("rt/handcmd");
+
     if (!lowcmd_pub.init()) {
         std::cerr << "Failed to initialize LowCmd publisher" << std::endl;
         return 1;
     }
+    if (!handcmd_pub.init()) {
+        std::cerr << "Failed to initialize HandCmd publisher" << std::endl;
+        return 1;
+    }
 
-    std::thread publish_thread(LowCmdPublishThread, &lowcmd_pub, &targetPub);
+    std::thread publish_thread(lowCmdPublishThread, &lowcmd_pub, &handcmd_pub);
 
     Subscriber<LowState> lowstate_sub("rt/lowstate");
 
@@ -246,9 +262,7 @@ int main(int argc, char *argv[]) {
     RBRSMasterArm sdk(port, baud, 0);
 
     sdk.open();
-
     // sdk.set_toggle_current(10);
-
     sdk.read();
 
     std::vector<F32> positions  = sdk.get_positions();   // [rad]
