@@ -11,7 +11,6 @@ This package reads joint positions from MasterArm devices using the MasterArm SD
 Hardware
 - MasterArm device (Dynamixel-based)
 - USB-2-Serial adapter (/dev/ttyUSB0)
-- 
 
 ## Installation
 0. submodules
@@ -55,6 +54,12 @@ Basic Execution
 ```bash
 ros2 run igris_c_masterarm igris_c_masterarm_node
 ```
+
+Launch with parameters
+```bash
+ros2 launch igris_c_masterarm igris_c_masterarm.launch.py port:="/dev/ttyUSB0" baud:=1000000
+```
+
 Pre-execution Checklist
 
 1. Verify MasterArm device is connected to `/dev/ttyUSB0`
@@ -68,6 +73,12 @@ Published Topics
 - `/igris_c/hand/targets` (`std_msgs/msg/Float32MultiArray`): Finger control target values
   - Size: 12 (6 for right hand + 6 for left hand)
   - Value: 0.0 (open) ~ 1.0 (closed)
+
+## ROS2 Launch Parameters
+| **parameter name** | **default**  | **description**                                   |
+|--------------------|--------------|---------------------------------------------------|
+| **port**           | /dev/ttyUSB0 | USB-serial port to communicate with the masterarm |
+| **baud**           | 1000000      | USB-serial port baudrate                          |
 
 ## DDS Topics
 
