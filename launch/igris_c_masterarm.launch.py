@@ -19,7 +19,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument('port', default_value='/dev/igrisb_masterarm'),
+        DeclareLaunchArgument('port', default_value='/dev/ttyUSB0'),
         DeclareLaunchArgument('baud', default_value='1000000'),
         node,
     ])
