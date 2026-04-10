@@ -1,0 +1,41 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/robros/ros2_ws/install/meta_quest_msgs/include/**",
+        "/home/robros/ros2_ws/install/igris_c_mujoco/include/**",
+        "/home/robros/ros2_ws/install/igris_c_imu/include/**",
+        "/home/robros/ros2_ws/install/igris_c_bridge/include/**",
+        "/home/robros/ros2_ws/install/igris_c_can/include/**",
+        "/home/robros/ros2_ws/install/igris_c_lib/include/**",
+        "/home/robros/ros2_ws/install/igris_c_msgs/include/**",
+        "/home/robros/ros2_ws/install/igris_c_hand/include/**",
+        "/home/robros/ros2_ws/install/dynamixel_sdk_custom_interfaces/include/**",
+        "/home/robros/ros2_ws/install/dynamixel_sdk/include/**",
+        "/opt/ros/jazzy/include/**",
+        "/home/robros/ros2_ws/src/DynamixelSDK/ros/dynamixel_sdk/include/**",
+        "/home/robros/ros2_ws/src/DynamixelSDK/ros/dynamixel_sdk_examples/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_bridge/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_can/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_controller/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_hand/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_imu/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_lib/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_mujoco/include/**",
+        "/home/robros/ros2_ws/src/igris_c/igris_c_sdk/include/**",
+        "/home/robros/ros2_ws/src/meta_quest_msgs/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
