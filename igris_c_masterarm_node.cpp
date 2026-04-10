@@ -99,7 +99,12 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
     HandCmd handCmd;
 
     bool use_joint_mode = (g_show_motor == 0);  // 0 = joint, 1 = motor
-    cmd.kinematic_mode(use_joint_mode ? KinematicMode::PJS : KinematicMode::MS);
+    const KinematicMode mode = use_joint_mode ? KinematicMode::PJS : KinematicMode::MS;
+    cmd.waist_kinematic_mode(mode);
+    cmd.left_ankle_kinematic_mode(mode);
+    cmd.right_ankle_kinematic_mode(mode);
+    cmd.left_wrist_kinematic_mode(mode);
+    cmd.right_wrist_kinematic_mode(mode);
 
     for (int i = 0; i < 31; i++) {
         auto &motor_cmd = cmd.motors()[i];

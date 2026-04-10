@@ -39,8 +39,7 @@ endif()
 set(MASTERARM_SDK_LIBRARY ${MASTERARM_SDK_DIR}/lib/libMasterArmSDK.a)
 set(MASTERARM_SDK_INCLUDE_DIR ${MASTERARM_SDK_DIR}/include)
 
-# igris_c_sdk_public path
-set(igris_sdk_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/igris_c_sdk_public/lib/cmake/igris_sdk")
+# Use workspace-installed igris_sdk to keep DDS message schema in sync.
 find_package(igris_sdk REQUIRED)
 
 # Create imported target
