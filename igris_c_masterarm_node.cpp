@@ -60,8 +60,8 @@ static const std::vector<std::vector<float>> KpKd = {
     {50.0, 0.8},  {25.0, 0.8},  {25.0, 0.8},                                                         // Waist
     {500.0, 3.0}, {200.0, 0.5}, {50.0, 0.5},  {500.0, 3.0}, {300.0, 1.5}, {300.0, 1.5},              // Left leg
     {500.0, 3.0}, {200.0, 0.5}, {50.0, 0.5},  {500.0, 3.0}, {300.0, 1.5}, {300.0, 1.5},              // Right leg
-    {50.0, 0.5},  {50.0, 0.5},  {30.0, 0.15}, {30.0, 0.15}, {5.0, 0.1},   {5.0, 0.1},   {5.0, 0.1},  // Left arm
-    {50.0, 0.5},  {50.0, 0.5},  {30.0, 0.15}, {30.0, 0.15}, {5.0, 0.1},   {5.0, 0.1},   {5.0, 0.1},  // Right arm
+    {100.0, 1.5},  {100.0, 1.5},  {100.0, 1.5}, {50.0, 1.0}, {5.0, 0.1},   {5.0, 0.1},   {5.0, 0.1},  // Left arm
+    {100.0, 1.5},  {100.0, 1.5},  {100.0, 1.5}, {50.0, 1.0}, {5.0, 0.1},   {5.0, 0.1},   {5.0, 0.1},  // Right arm
     {2.0, 0.05},  {5.0, 0.1}                                                                         // Neck
 };
 
@@ -143,69 +143,69 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
         handCmd.motor_cmd()[11].q(left_target_joint_positions[7] > 0.7805 ? 1.0f : 0.0f);  // Right thumb
         handPublisher->write(handCmd);
 
-        if (g_control_mode != ControlMode::CONTROL_MODE_LOW_LEVEL) {
-            std::cout << "Waiting for LOW_LEVEL control mode..." << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            continue;
-        }
+        // if (g_control_mode != ControlMode::CONTROL_MODE_LOW_LEVEL) {
+        //     std::cout << "Waiting for LOW_LEVEL control mode..." << std::endl;
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //     continue;
+        // }
 
         auto &left_shoulder_pitch_cmd = cmd.motors()[15];
         left_shoulder_pitch_cmd.q(std::clamp(left_target_joint_positions[0] * axisDir[15], motorLimit[15][0], motorLimit[15][1]));
-        left_shoulder_pitch_cmd.kp(softKpKd[15][0]);
-        left_shoulder_pitch_cmd.kd(softKpKd[15][1]);
+        left_shoulder_pitch_cmd.kp(KpKd[15][0]);
+        left_shoulder_pitch_cmd.kd(KpKd[15][1]);
         auto &left_shoulder_roll_cmd = cmd.motors()[16];
         left_shoulder_roll_cmd.q(std::clamp(left_target_joint_positions[1] * axisDir[16], motorLimit[16][0], motorLimit[16][1]));
-        left_shoulder_roll_cmd.kp(softKpKd[16][0]);
-        left_shoulder_roll_cmd.kd(softKpKd[16][1]);
+        left_shoulder_roll_cmd.kp(KpKd[16][0]);
+        left_shoulder_roll_cmd.kd(KpKd[16][1]);
         auto &left_shoulder_yaw_cmd = cmd.motors()[17];
         left_shoulder_yaw_cmd.q(std::clamp(left_target_joint_positions[2] * axisDir[17], motorLimit[17][0], motorLimit[17][1]));
-        left_shoulder_yaw_cmd.kp(softKpKd[17][0]);
-        left_shoulder_yaw_cmd.kd(softKpKd[17][1]);
+        left_shoulder_yaw_cmd.kp(KpKd[17][0]);
+        left_shoulder_yaw_cmd.kd(KpKd[17][1]);
         auto &left_elbow_pitch_cmd = cmd.motors()[18];
         left_elbow_pitch_cmd.q(std::clamp(left_target_joint_positions[3] * axisDir[18], motorLimit[18][0], motorLimit[18][1]));
-        left_elbow_pitch_cmd.kp(softKpKd[18][0]);
-        left_elbow_pitch_cmd.kd(softKpKd[18][1]);
+        left_elbow_pitch_cmd.kp(KpKd[18][0]);
+        left_elbow_pitch_cmd.kd(KpKd[18][1]);
         auto &left_wrist_yaw_cmd = cmd.motors()[19];
         left_wrist_yaw_cmd.q(std::clamp(left_target_joint_positions[4] * axisDir[19], motorLimit[19][0], motorLimit[19][1]));
-        left_wrist_yaw_cmd.kp(softKpKd[19][0]);
-        left_wrist_yaw_cmd.kd(softKpKd[19][1]);
+        left_wrist_yaw_cmd.kp(KpKd[19][0]);
+        left_wrist_yaw_cmd.kd(KpKd[19][1]);
         auto &left_wrist_front_cmd = cmd.motors()[20];
         left_wrist_front_cmd.q(std::clamp(left_target_joint_positions[5] * axisDir[20], motorLimit[20][0], motorLimit[20][1]));
-        left_wrist_front_cmd.kp(softKpKd[20][0]);
-        left_wrist_front_cmd.kd(softKpKd[20][1]);
+        left_wrist_front_cmd.kp(KpKd[20][0]);
+        left_wrist_front_cmd.kd(KpKd[20][1]);
         auto &left_wrist_back_cmd = cmd.motors()[21];
         left_wrist_back_cmd.q(std::clamp(left_target_joint_positions[6] * axisDir[21], motorLimit[21][0], motorLimit[21][1]));
-        left_wrist_back_cmd.kp(softKpKd[21][0]);
-        left_wrist_back_cmd.kd(softKpKd[21][1]);
+        left_wrist_back_cmd.kp(KpKd[21][0]);
+        left_wrist_back_cmd.kd(KpKd[21][1]);
 
         auto &right_shoulder_pitch_cmd = cmd.motors()[22];
         right_shoulder_pitch_cmd.q(std::clamp(rigit_target_joint_positions[0] * axisDir[22], motorLimit[22][0], motorLimit[22][1]));
-        right_shoulder_pitch_cmd.kp(softKpKd[22][0]);
-        right_shoulder_pitch_cmd.kd(softKpKd[22][1]);
+        right_shoulder_pitch_cmd.kp(KpKd[22][0]);
+        right_shoulder_pitch_cmd.kd(KpKd[22][1]);
         auto &right_shoulder_roll_cmd = cmd.motors()[23];
         right_shoulder_roll_cmd.q(std::clamp(rigit_target_joint_positions[1] * axisDir[23], motorLimit[23][0], motorLimit[23][1]));
-        right_shoulder_roll_cmd.kp(softKpKd[23][0]);
-        right_shoulder_roll_cmd.kd(softKpKd[23][1]);
+        right_shoulder_roll_cmd.kp(KpKd[23][0]);
+        right_shoulder_roll_cmd.kd(KpKd[23][1]);
         auto &right_shoulder_yaw_cmd = cmd.motors()[24];
         right_shoulder_yaw_cmd.q(std::clamp(rigit_target_joint_positions[2] * axisDir[24], motorLimit[24][0], motorLimit[24][1]));
-        right_shoulder_yaw_cmd.kp(softKpKd[24][0]);
-        right_shoulder_yaw_cmd.kd(softKpKd[24][1]);
+        right_shoulder_yaw_cmd.kp(KpKd[24][0]);
+        right_shoulder_yaw_cmd.kd(KpKd[24][1]);
         auto &right_elbow_pitch_cmd = cmd.motors()[25];
         right_elbow_pitch_cmd.q(std::clamp(rigit_target_joint_positions[3] * axisDir[25], motorLimit[25][0], motorLimit[25][1]));
-        right_elbow_pitch_cmd.kp(softKpKd[25][0]);
-        right_elbow_pitch_cmd.kd(softKpKd[25][1]);
+        right_elbow_pitch_cmd.kp(KpKd[25][0]);
+        right_elbow_pitch_cmd.kd(KpKd[25][1]);
         auto &right_wrist_yaw_cmd = cmd.motors()[26];
         right_wrist_yaw_cmd.q(std::clamp(rigit_target_joint_positions[4] * axisDir[26], motorLimit[26][0], motorLimit[26][1]));
-        right_wrist_yaw_cmd.kp(softKpKd[26][0]);
-        right_wrist_yaw_cmd.kd(softKpKd[26][1]);
+        right_wrist_yaw_cmd.kp(KpKd[26][0]);
+        right_wrist_yaw_cmd.kd(KpKd[26][1]);
         auto &right_wrist_front_cmd = cmd.motors()[27];
         right_wrist_front_cmd.q(std::clamp(rigit_target_joint_positions[5] * axisDir[27], motorLimit[27][0], motorLimit[27][1]));
-        right_wrist_front_cmd.kp(softKpKd[27][0]);
-        right_wrist_front_cmd.kd(softKpKd[27][1]);
+        right_wrist_front_cmd.kp(KpKd[27][0]);
+        right_wrist_front_cmd.kd(KpKd[27][1]);
         auto &right_wrist_back_cmd = cmd.motors()[28];
         right_wrist_back_cmd.q(std::clamp(rigit_target_joint_positions[6] * axisDir[28], motorLimit[28][0], motorLimit[28][1]));
-        right_wrist_back_cmd.kp(softKpKd[28][0]);
-        right_wrist_back_cmd.kd(softKpKd[28][1]);
+        right_wrist_back_cmd.kp(KpKd[28][0]);
+        right_wrist_back_cmd.kd(KpKd[28][1]);
 
         jointPublisher->write(cmd);
     }
