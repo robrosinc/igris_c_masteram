@@ -66,30 +66,25 @@ Pre-execution Checklist
 2. Verify IGRIS-C robot is running
 3. Verify Low-Level control mode is activated
 
-## ROS2 Topics
+## DDS Topics
+
+> This node does not publish finger commands on standard ROS2 topics. It uses CycloneDDS-style custom DDS topics for IGRIS communication.
 
 Published Topics
 
-- `/igris_c/hand/targets` (`std_msgs/msg/Float32MultiArray`): Finger control target values
-  - Size: 12 (6 for right hand + 6 for left hand)
-  - Value: 0.0 (open) ~ 1.0 (closed)
+- `rt/lowcmd`: Robot motor control commands (`LowCmd`)
+- `rt/handcmd`: Hand motor control commands (`HandCmd`)
+
+Subscribed Topics
+
+- `rt/lowstate`: Robot current state (`LowState`)
+- `rt/controlmodestate`: Control mode state (`ControlModeState`)
 
 ## ROS2 Launch Parameters
 | **parameter name** | **default**  | **description**                                   |
 |--------------------|--------------|---------------------------------------------------|
 | **port**           | /dev/ttyUSB0 | USB-serial port to communicate with the masterarm |
 | **baud**           | 1000000      | USB-serial port baudrate                          |
-
-## DDS Topics
-
-Subscribed Topics
-
-- `rt/lowstate`: Robot's current state (IGRIS SDK)
-- `rt/controlmodestate`: Control mode state (IGRIS SDK)
-
-Published Topics
-
-- `rt/lowcmd`: Robot motor control commands (IGRIS SDK)
 
 ## Control Modes
 
