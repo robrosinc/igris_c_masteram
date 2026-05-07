@@ -1,10 +1,12 @@
 # IGRIS_C_MASTERARM
 
-ROS2 node for MasterArm teleoperation control of the IGRIS-C robot. Controls robot arms through Dynamixel-based master arm devices.
+ROS2 package for MasterArm teleoperation of IGRIS-C. It provides:
+- a headless relay node for direct MasterArm-to-robot publishing
+- an SDK-style GUI example client, adapted for MasterArm workflows
 
 ## Overview
 
-This package reads joint positions from MasterArm devices using the MasterArm SDK, and converts them into control commands for both arms (left/right) and fingers of the IGRIS-C robot.
+This package reads joint positions from MasterArm devices using the MasterArm SDK and converts them into control commands for both robot arms and hands. The GUI tool also subscribes to `rt/lowstate` and shows the current robot arm positions against the MasterArm-driven command values.
 
 ## Requirements
 
@@ -50,25 +52,43 @@ source install/setup.bash
 ```
 
 ## Usage
-Basic Execution
+Headless relay node
 ```bash
 ros2 run igris_c_masterarm igris_c_masterarm_node
 ```
 
-Launch with parameters
+GUI example build
+```bash
+cd ~/ros2_ws/src/igris_c_masteram/examples
+./build.sh
+```
+
+The GUI example is pinned to:
+`igris_c_masteram/third_party/igris_c_sdk_public`
+It does not fall back to `COLCON_PREFIX_PATH` or any SDK installed from the robot-side workspace.
+
+GUI example run
+```bash
+cd ~/ros2_ws/src/igris_c_masteram/examples/build
+./masterarm_gui_client /dev/ttyUSB0 1000000 0
+./masterarm_gui_client /dev/ttyUSB0 1000000 0 robot1
+```
+
+Launch file for the headless relay node
 ```bash
 ros2 launch igris_c_masterarm igris_c_masterarm.launch.py port:="/dev/ttyUSB0" baud:=1000000
+ros2 launch igris_c_masterarm igris_c_masterarm.launch.py port:="/dev/ttyUSB0" baud:=1000000 namespace:=robot1
 ```
 
 Pre-execution Checklist
 
 1. Verify MasterArm device is connected to `/dev/ttyUSB0`
 2. Verify IGRIS-C robot is running
-3. Verify Low-Level control mode is activated
+3. For the GUI example, use the Start/Stop button to enable or disable command publishing
 
 ## DDS Topics
 
-> This node does not publish finger commands on standard ROS2 topics. It uses CycloneDDS-style custom DDS topics for IGRIS communication.
+> This package does not publish finger commands on standard ROS2 topics. It uses CycloneDDS-style custom DDS topics for IGRIS communication.
 
 Published Topics
 
@@ -78,21 +98,24 @@ Published Topics
 Subscribed Topics
 
 - `rt/lowstate`: Robot current state (`LowState`)
-- `rt/controlmodestate`: Control mode state (`ControlModeState`)
+- `rt/robotstate`: Robot control state (`RobotState`)
 
 ## ROS2 Launch Parameters
-| **parameter name** | **default**  | **description**                                   |
-|--------------------|--------------|---------------------------------------------------|
-| **port**           | /dev/ttyUSB0 | USB-serial port to communicate with the masterarm |
-| **baud**           | 1000000      | USB-serial port baudrate                          |
+| **parameter name** | **default**  | **description**                                        |
+|--------------------|--------------|--------------------------------------------------------|
+| **port**           | /dev/ttyUSB0 | USB-serial port to communicate with the MasterArm      |
+| **baud**           | 1000000      | USB-serial port baudrate                               |
+| **domain_id**      | 0            | CycloneDDS domain id                                   |
+| **namespace**      | empty        | Optional DDS namespace prefix                          |
 
-## Control Modes
+## GUI Behavior
 
-The node operates only in IGRIS-C's **Low-Level control mode**:
-
-- **High-Level Mode**: Standby state (no commands sent)
-- **Low-Level Mode**: Send master arm joint positions to robot
-
+The GUI example:
+- removes the slider-based command editor from `sdk_gui_client`
+- shows MasterArm command values and the current `rt/lowstate` arm motor values side by side
+- does not gate publishing on `RobotState`
+- starts and stops low-level command publishing only with the GUI button
+- keeps service buttons for torque, BMS, hand init, and control-mode switching
 
 ## Trouble Shooting
 

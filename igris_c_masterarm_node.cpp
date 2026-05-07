@@ -18,16 +18,16 @@
 // ROS
 #include "rclcpp/rclcpp.hpp"
 
-// igris_sdk
-#include "igris_sdk/channel_factory.hpp"
-#include "igris_sdk/igris_c_client.hpp"
-#include "igris_sdk/publisher.hpp"
-#include "igris_sdk/subscriber.hpp"
+// igris_c_sdk
+#include "igris_c_sdk/channel_factory.hpp"
+#include "igris_c_sdk/igris_c_client.hpp"
+#include "igris_c_sdk/publisher.hpp"
+#include "igris_c_sdk/subscriber.hpp"
 
 // masterarm
 #include "rbrs_masterarm.hpp"
 
-using namespace igris_sdk;
+using namespace igris_c_sdk;
 using namespace igris_c::msg::dds;
 
 bool g_running          = true;
@@ -36,7 +36,26 @@ static int g_show_motor = 1;  // 1 = motor, 0 = joint
 std::vector<float> left_target_joint_positions  = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 std::vector<float> rigit_target_joint_positions = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-ControlMode g_control_mode = ControlMode::CONTROL_MODE_HIGH_LEVEL;
+RobotControlState g_robot_control_state = RobotControlState::ROBOT_STATE_NOT_READY;
+
+bool isLowLevelControlMode(RobotControlState state) {
+    return state == RobotControlState::ROBOT_STATE_LOW || state == RobotControlState::ROBOT_STATE_WALK_LOW;
+}
+
+void printParameterHints() {
+    std::cerr << "\nParameter hints:\n"
+              << "  ros2 launch igris_c_masterarm igris_c_masterarm.launch.py "
+              << "port:=/dev/ttyUSB0 baud:=1000000 domain_id:=0 namespace:=robot1\n"
+              << "  ros2 launch igris_c_masterarm igris_c_masterarm.launch.py "
+              << "port:=/dev/ttyUSB1 baud:=2000000 domain_id:=10\n"
+              << "Notes:\n"
+              << "  - 'port' must be a valid serial device path.\n"
+              << "  - 'baud' must be a positive integer.\n"
+              << "  - 'domain_id' must be zero or a positive integer.\n"
+              << "  - 'namespace' is optional. Leave it empty to use no DDS namespace.\n"
+              << std::endl;
+}
+
 // Hand motor IDs (matches dxl_hand_controller order)
 static const std::array<uint16_t, 12> HAND_MOTOR_IDS = {11, 12, 13, 14, 15, 16, 21, 22, 23, 24, 25, 26};
 
@@ -99,7 +118,7 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
     HandCmd handCmd;
 
     bool use_joint_mode = (g_show_motor == 0);  // 0 = joint, 1 = motor
-    cmd.kinematic_mode(use_joint_mode ? KinematicMode::PJS : KinematicMode::MS);
+    cmd.kinematic_modes().fill(use_joint_mode ? KinematicMode::PJS : KinematicMode::MS);
 
     for (int i = 0; i < 31; i++) {
         auto &motor_cmd = cmd.motors()[i];
@@ -143,8 +162,8 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
         handCmd.motor_cmd()[11].q(left_target_joint_positions[7] > 0.7805 ? 1.0f : 0.0f);  // Right thumb
         handPublisher->write(handCmd);
 
-        if (g_control_mode != ControlMode::CONTROL_MODE_LOW_LEVEL) {
-            std::cout << "Waiting for LOW_LEVEL control mode..." << std::endl;
+        if (!isLowLevelControlMode(g_robot_control_state)) {
+            std::cout << "Waiting for LOW_LEVEL-family control mode..." << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
@@ -211,10 +230,8 @@ void lowCmdPublishThread(Publisher<LowCmd> *jointPublisher, Publisher<HandCmd> *
     }
 }
 
-void controlModeStateCallback(const ControlModeState &state) {
-    // std::cout << "Control Mode State - Tick: " << state.tick() << ", Mode: "
-    //           << (state.mode() == ControlMode::CONTROL_MODE_LOW_LEVEL ? "LOW_LEVEL" : "HIGH_LEVEL") << std::endl;
-    g_control_mode = state.mode();
+void robotStateCallback(const RobotState &state) {
+    g_robot_control_state = state.state();
 }
 
 int main(int argc, char *argv[]) {
@@ -223,19 +240,29 @@ int main(int argc, char *argv[]) {
 
     const auto port = node->declare_parameter<std::string>("port", "/dev/ttyUSB0");
     const auto baud = node->declare_parameter<int>("baud", 1000000);
+    const auto domain_id_param = node->declare_parameter<int>("domain_id", 0);
+    const auto robot_namespace = node->declare_parameter<std::string>("namespace", "");
 
     std::cout << "Masterarm Port: " << port << ", Baud: " << baud << std::endl;
 
-    int domain_id = 0;
+    int domain_id = domain_id_param;
     if (argc > 1) {
         domain_id = std::atoi(argv[1]);
     }
 
+    if (port.empty() || baud <= 0 || domain_id < 0) {
+        std::cerr << "Invalid startup parameters."
+                  << " port='" << port << "', baud=" << baud << ", domain_id=" << domain_id << std::endl;
+        printParameterHints();
+        return 1;
+    }
+
     std::cout << "Domain ID: " << domain_id << std::endl;
+    std::cout << "Robot Namespace: " << (robot_namespace.empty() ? "(none)" : robot_namespace) << std::endl;
     std::cout << "Make sure the robot controller is running!\n" << std::endl;
 
     std::cout << "Initializing ChannelFactory..." << std::endl;
-    ChannelFactory::Instance()->Init(domain_id);
+    ChannelFactory::Instance()->Init(domain_id, robot_namespace);
 
     if (!ChannelFactory::Instance()->IsInitialized()) {
         std::cerr << "Failed to initialize ChannelFactory" << std::endl;
@@ -266,10 +293,10 @@ int main(int argc, char *argv[]) {
 
     Subscriber<LowState> lowstate_sub("rt/lowstate");
 
-    std::cout << "Initialize rt/controlmodestate subscriber..." << std::endl;
-    Subscriber<ControlModeState> controlmodestateSub("rt/controlmodestate");
-    if (!controlmodestateSub.init(controlModeStateCallback)) {
-        std::cerr << "Failed to initialize ControlModeState subscriber" << std::endl;
+    std::cout << "Initialize rt/robotstate subscriber..." << std::endl;
+    Subscriber<RobotState> robotstateSub("rt/robotstate");
+    if (!robotstateSub.init(robotStateCallback)) {
+        std::cerr << "Failed to initialize RobotState subscriber" << std::endl;
         return 1;
     }
 

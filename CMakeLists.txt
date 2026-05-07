@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_link_options("-Wl,--no-as-needed")
 
 find_package(OpenSSL REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ament_cmake REQUIRED)
-find_package(ament_index_cpp REQUIRED)
 
 # Path to MasterArmSDK
 set(MASTERARM_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/MasterArmSDK
@@ -40,8 +40,8 @@ set(MASTERARM_SDK_LIBRARY ${MASTERARM_SDK_DIR}/lib/libMasterArmSDK.a)
 set(MASTERARM_SDK_INCLUDE_DIR ${MASTERARM_SDK_DIR}/include)
 
 # igris_c_sdk_public path
-set(igris_sdk_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/igris_c_sdk_public/lib/cmake/igris_sdk")
-find_package(igris_sdk REQUIRED)
+set(igris_c_sdk_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/igris_c_sdk_public/lib/cmake/igris_c_sdk")
+find_package(igris_c_sdk REQUIRED)
 
 # Create imported target
 add_library(
@@ -57,7 +57,7 @@ set_target_properties(
 
 add_executable(igris_c_masterarm_node igris_c_masterarm_node.cpp)
 target_link_libraries(
-  igris_c_masterarm_node MasterArmSDK igris_sdk::igris_sdk pthread rt
+  igris_c_masterarm_node MasterArmSDK igris_c_sdk::igris_c_sdk pthread rt
 )
 
 ament_target_dependencies(igris_c_masterarm_node rclcpp std_msgs)

@@ -3,12 +3,13 @@
 <package format="3">
   <name>igris_c_masterarm</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>MasterArm teleoperation node and GUI tool for IGRIS-C upper-body control.</description>
   <maintainer email="colson@robros.co.kr">robros</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Proprietary</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
